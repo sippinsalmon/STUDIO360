@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -15,31 +15,13 @@ import { useTheme } from '@mui/material/styles';
 import InputAdornment from '@mui/material/InputAdornment';
 
 import { DashboardContent } from 'src/layouts/dashboard';
+import axiosInstance, { endpoints } from 'src/utils/axios';
 import { Iconify } from 'src/components/iconify';
 import { Label } from 'src/components/label';
 
 // ----------------------------------------------------------------------
 
-const MOCK_CHAT_HISTORY = [
-  {
-    id: 1,
-    type: 'ai',
-    message: 'Hello! I\'m your AI Bookkeeper. I can help you with transaction categorization, expense analysis, financial reporting, and more. What would you like to work on today?',
-    timestamp: '2 minutes ago',
-  },
-  {
-    id: 2,
-    type: 'user',
-    message: 'Can you help me categorize my recent transactions?',
-    timestamp: '1 minute ago',
-  },
-  {
-    id: 3,
-    type: 'ai',
-    message: 'Of course! I can help you categorize transactions automatically. I can analyze transaction descriptions and amounts to suggest appropriate categories like "Office Supplies", "Marketing", "Utilities", etc. Would you like me to review your recent transactions?',
-    timestamp: '1 minute ago',
-  },
-];
+const MOCK_CHAT_HISTORY = [];
 
 const MOCK_SUGGESTIONS = [
   'Categorize recent transactions',
@@ -68,6 +50,7 @@ export default function AIBookkeeperPage() {
   const [message, setMessage] = useState('');
   const [chatHistory, setChatHistory] = useState(MOCK_CHAT_HISTORY);
   const [stats, setStats] = useState(null);
+  const sessionIdRef = useRef(null);
 
   // Load stats from backend (fallback to localStorage) and subscribe to updates
   useEffect(() => {
@@ -100,7 +83,7 @@ export default function AIBookkeeperPage() {
     window.location.href = '/dashboard/ai-bookkeeper/upload-process';
   };
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (!message.trim()) return;
 
     const newMessage = {
@@ -113,16 +96,31 @@ export default function AIBookkeeperPage() {
     setChatHistory([...chatHistory, newMessage]);
     setMessage('');
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const res = await axiosInstance.post(endpoints.aiAssistantMessage, {
+        message,
+        sessionId: sessionIdRef.current,
+        context: { page: 'ai-bookkeeper' },
+      });
+      const data = res?.data?.data || {};
+      if (data.sessionId) sessionIdRef.current = data.sessionId;
       const aiResponse = {
-        id: chatHistory.length + 2,
+        id: (prevId => prevId + 1)(chatHistory.length + 1),
         type: 'ai',
-        message: 'I understand your request. Let me analyze that for you and provide the best solution.',
+        message: data.reply || 'Okay.',
         timestamp: 'Just now',
       };
       setChatHistory(prev => [...prev, aiResponse]);
-    }, 1000);
+    } catch (err) {
+      const aiResponse = {
+        id: (prevId => prevId + 1)(chatHistory.length + 1),
+        type: 'ai',
+        message: 'Assistant is unavailable. Please try again shortly.',
+        timestamp: 'Just now',
+      };
+      setChatHistory(prev => [...prev, aiResponse]);
+      console.error('Assistant error:', err);
+    }
   };
 
   return (

@@ -87,6 +87,7 @@ app.get('/api/health', (req, res) => {
 
 // API Routes (to be implemented)
 app.use('/api/auth', require('./api/auth/auth.routes'));
+app.use('/api/assistant', require('./api/assistant/assistant.routes'));
 app.use('/api/ai', require('./api/ai/ai.routes'));
 app.use('/api/invoices', require('./api/invoices/invoice.routes'));
 app.use('/api/bookkeeping', require('./api/bookkeeping/bookkeeping.routes'));

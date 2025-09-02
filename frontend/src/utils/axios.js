@@ -62,6 +62,8 @@ export const fetcher = async (args) => {
 
 export const endpoints = {
   chat: '/api/chat',
+  aiAssistantMessage: '/api/assistant/message',
+  aiAssistantHealth: '/api/assistant/health',
   kanban: '/api/kanban',
   calendar: '/api/calendar',
   auth: {
